@@ -42,6 +42,7 @@ class Selector:
         """
         try:
             with open(feature_file, encoding="utf-8") as fh:
+                _ = fh.readline()
                 for line in fh:
                     parts = line.split(",")
                     inst_name = parts.pop(0)
