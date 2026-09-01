@@ -3,38 +3,28 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "fillname"
-authors = [{ name = "Author Fillname", email = "author@fillname.org" }]
+name = "setselector"
+authors = [{ name = "Tom Schmidt" }]
 description = "A template project."
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 license = { file = "LICENSE" }
 dynamic = ["version"]
 readme = "README.md"
 
 [project.urls]
-Homepage = "https://github.com/potassco/fillname.git/"
-Documentation = "https://docs.potassco.org/fillname/"
-Repository = "https://github.com/potassco/fillname"
-Issues = "https://github.com/potassco/fillname/issues"
-Changelog = "https://github.com/potassco/fillname/blob/master/CHANGES.md"
+Homepage = "https://potassco.org"
+Repository = "https://github.com/potassco/benchmark-set-selection-tool"
+Issues = "https://github.com/potassco/benchmark-set-selection-tool/issues"
 
 [project.optional-dependencies]
 lint = ["ruff"]
 typecheck = ["pytest", "ty"]
 test = ["pytest", "pytest-cov", "coverage[toml]"]
-doc = [
-    "mkdocs",
-    "mkdocs-material",
-    "mkdocstrings>=1.0.4",
-    "mkdocstrings-python>=2.0",
-    "clindocs>=1.5.1",
-    "mkdocs-literate-nav",
-    "pygments_clingo",
-]
-dev = ["fillname[test,typecheck,lint]"]
+doc = ["zensical", "mkdocstrings-python"]
+dev = ["setselector[test,typecheck,lint]"]
 
 [project.scripts]
-fillname = "fillname.__main__:main"
+setselector = "setselector.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
@@ -80,8 +70,8 @@ python_files = "test_*.py"
 python_functions = "test_*"
 
 [tool.coverage.run]
-source = ["fillname", "tests"]
-omit = ["*/fillname/__main__.py", "*/fillname/utils/logging.py"]
+source = ["setselector", "tests"]
+omit = ["*/setselector/__main__.py", "*/setselector/utils/logging.py", "tests/*", "*/tests/*]
 
 [tool.coverage.report]
 show_missing = true

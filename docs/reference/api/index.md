@@ -5,7 +5,7 @@ icon: "material/book-open-variant"
 
 # API
 
-::: fillname
+::: setselector
     handler: python
     options:
       members: true

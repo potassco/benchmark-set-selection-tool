@@ -4,7 +4,7 @@ hide:
   - toc
 ---
 
-# fillname
+# setselector
 
 !!! info
-    *fillname* is part of the [Potassco](https://potassco.org) suite.
+    *setselector* is part of the [Potassco](https://potassco.org) suite.
