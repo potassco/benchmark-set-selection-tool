@@ -243,6 +243,8 @@ def do_cluster(
     else:
         assert isinstance(feature, dict)
         points = [Point(feats, inst) for inst, feats in feature.items()]
+    if len(points) < 2:
+        raise ValueError("at least two instances are required for clustering")
     norma = ZNormalizer(points)
     points = norma.normalize_features()
 
@@ -262,7 +264,7 @@ def do_cluster(
             if len(all_min_dists) > 1 and sum_dist > all_min_dists[-2]:
                 break
 
-        best_k = all_min_dists.index(min(all_min_dists)) + 2
+        best_k = all_min_dists.index(min(all_min_dists)) + 2 if all_min_dists else 2
         log.info(f"Dists: {all_min_dists}")
         log.info(f"Best K: {best_k}")
         clusters = execute_clustering(points, reps, best_k)
