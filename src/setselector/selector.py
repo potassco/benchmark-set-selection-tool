@@ -1,6 +1,7 @@
 """
 Selects a representative benchmark set based on runtime and feature data.
 
+Author: Marius Lindauer
 Modified by: Tom Schmidt
 Date: 1st September 2026
 """

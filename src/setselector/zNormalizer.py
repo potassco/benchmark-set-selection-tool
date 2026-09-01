@@ -1,6 +1,7 @@
 """
 Z-score (mean/variance) normalization of feature vectors.
 
+Author: Marius Lindauer
 Modified by: Tom Schmidt
 Date: 1st September 2026
 """

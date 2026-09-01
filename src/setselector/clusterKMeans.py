@@ -2,7 +2,7 @@
 K-means clustering of instance feature vectors.
 
 Author: pandoricweb http://pandoricweb.tumblr.com/post/8646701677/python-implementation-of-the-k-means-clustering
-Modified by: Marius Schneider
+Modified by: Marius Lindauer
 Date: 30th May 2012
 Modified by: Tom Schmidt
 Date: 1st September 2026

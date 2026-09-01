@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "setselector"
-authors = [{ name = "Tom Schmidt" }]
-description = "A template project."
+authors = [{ name = "Tom Schmidt" },{ name = "Marius Lindauer"}]
+description = "Benchmark-Set-Selection-Tool."
 requires-python = ">=3.12"
 license = { file = "LICENSE" }
 dynamic = ["version"]
@@ -71,7 +71,7 @@ python_functions = "test_*"
 
 [tool.coverage.run]
 source = ["setselector", "tests"]
-omit = ["*/setselector/__main__.py", "*/setselector/utils/logging.py", "tests/*", "*/tests/*]
+omit = ["*/setselector/__main__.py", "*/setselector/utils/logging.py", "tests/*", "*/tests/*"]
 
 [tool.coverage.report]
 show_missing = true
