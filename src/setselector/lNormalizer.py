@@ -1,90 +1,102 @@
-#!/usr/bin/env python
+"""
+Min/max (linear) normalization of feature vectors.
 
-import math
-from clusterKMeans import Point
+Author: Marius Schneider
+Modified by: Tom Schmidt
+Date: 1st September 2026
+"""
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .clusterKMeans import Point
+
 
 class LNormalizer:
-    featureData = []
-    
-    # computed
-    mins = []
-    maxs = []
-    refs = []
-    
-    def __init__(self,featureData):
-        self.featureData = featureData
-    
-    def normalizeFeatures(self):
-        self.points2Arr()
-        transposedFeatures = self.transposeMatrix(self.featureData)
-        self.maxs,self.mins = self.getStastics(transposedFeatures)
-        transNormedFeatures = self.normalize(transposedFeatures)
-        self.featureData = self.transposeMatrix(transNormedFeatures)
-        self.arr2Points()
-        return self.featureData
-    
-    def points2Arr(self):
+    """
+    Normalizes feature vectors of `Point`s to the [0, 1] range.
+    """
+
+    def __init__(self, feature_data: list[Point]) -> None:
+        self.feature_data: list[Point] | list[list[float]] = feature_data
+        self.mins: list[float] = []
+        self.maxs: list[float] = []
+        self.refs: list[object] = []
+
+    def normalize_features(self) -> list[Point]:
+        """
+        Normalize the stored points and return them.
+        """
+        self.points_to_arr()
+        transposed_features = self.transpose_matrix(self.feature_data)
+        self.maxs, self.mins = self.get_statistics(transposed_features)
+        trans_normed_features = self.normalize(transposed_features)
+        self.feature_data = self.transpose_matrix(trans_normed_features)
+        return self.arr_to_points()
+
+    def points_to_arr(self) -> None:
+        """
+        Convert the stored points into plain coordinate lists.
+        """
         arr = []
-        for p in self.featureData:
+        for p in self.feature_data:
             arr.append(p.coords)
             self.refs.append(p.reference)
-        self.featureData = arr
-        return True
+        self.feature_data = arr
 
-    def arr2Points(self):
+    def arr_to_points(self) -> list[Point]:
+        """
+        Convert the stored coordinate lists back into points.
+        """
+        from .clusterKMeans import Point
+
         points = []
-        for a in self.featureData:
+        for a in self.feature_data:
             ref = self.refs.pop(0)
-            points.append(Point(a,ref))
-        self.featureData = points
-    
-    def transposeMatrix(self,matrix):
-        transposedMatrix = []
-        for row in matrix:
-            index = 0
-            for value in row:
-                try:
-                    transposedMatrix[index].append(value)
-                except:
-                    transposedMatrix.append([value])
-                index += 1
-        return transposedMatrix
-    
-    def getStastics(self,matrix):
-        maxs = []
-        mins = [] 
-        for line in matrix:
-            maxs.append(max(line))
-            mins.append(min(line))
-        return maxs,mins
-    
-    def normalize(self,matrix):
-        index = 0
-        normMatrix = []
-        #print("Maxis : "+str(self.maxs))
-        #print("Minis : "+str(self.mins))
-        for line in matrix:
-            newLine = []
+            points.append(Point(a, ref))
+        self.feature_data = points
+        return points
+
+    def transpose_matrix(self, matrix: list[list[float]]) -> list[list[float]]:
+        """
+        Transpose a matrix given as a list of rows.
+        """
+        return [list(column) for column in zip(*matrix)]
+
+    def get_statistics(self, matrix: list[list[float]]) -> tuple[list[float], list[float]]:
+        """
+        Compute per-row max and min values.
+        """
+        maxs = [max(line) for line in matrix]
+        mins = [min(line) for line in matrix]
+        return maxs, mins
+
+    def normalize(self, matrix: list[list[float]]) -> list[list[float]]:
+        """
+        Normalize each row of the matrix using the stored maxs and mins.
+        """
+        norm_matrix = []
+        for index, line in enumerate(matrix):
             maxi = self.maxs[index]
             mini = self.mins[index]
-            for value in line:
-                if (maxi == mini):
-                    newLine.append(0.0)
-                else:
-                    newLine.append(((value-mini) /(maxi-mini)))
-            normMatrix.append(newLine)
-            index += 1
-        return normMatrix
-    
-    def normalizeVector(self,vector):
-        normedVector = []
-        index = 0
-        mini = self.mins
-        maxi = self.maxs
-        for value in vector:
-            if (mini[index] != maxi[index]):
-                normedVector.append((float(value)-mini[index])/(maxi[index] - mini[index]))
+            if maxi == mini:
+                norm_matrix.append([0.0 for _ in line])
             else:
-                normedVector.append(0.0)
-            index += 1
-        return normedVector
+                norm_matrix.append([(value - mini) / (maxi - mini) for value in line])
+        return norm_matrix
+
+    def normalize_vector(self, vector: list[float]) -> list[float]:
+        """
+        Normalize a single feature vector using the stored maxs and mins.
+        """
+        normed_vector = []
+        for index, value in enumerate(vector):
+            mini = self.mins[index]
+            maxi = self.maxs[index]
+            if mini != maxi:
+                normed_vector.append((float(value) - mini) / (maxi - mini))
+            else:
+                normed_vector.append(0.0)
+        return normed_vector

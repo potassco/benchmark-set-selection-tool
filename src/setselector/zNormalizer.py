@@ -1,96 +1,100 @@
-#!/usr/bin/env python
+"""
+Z-score (mean/variance) normalization of feature vectors.
+
+Modified by: Tom Schmidt
+Date: 1st September 2026
+"""
+
+from __future__ import annotations
 
 import math
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .clusterKMeans import Point
+
 
 class ZNormalizer:
-    featureData = []
-    
-    # computed
-    means = []
-    vars = []
-    refs = []
-    
-    def __init__(self,featureData):
-        self.featureData = featureData
-    
-    def normalizeFeatures(self):
-        self.points2Arr()
-        transposedFeatures = self.transposeMatrix(self.featureData)
-        self.means,self.vars = self.getStastics(transposedFeatures)
-        transNormedFeatures = self.normalize(transposedFeatures)
-        means_int,vars_int = self.getStastics(transNormedFeatures)
-        self.featureData = self.transposeMatrix(transNormedFeatures)
-        self.arr2Points()
-        return self.featureData
-    
-    def points2Arr(self):
+    """
+    Normalizes feature vectors of `Point`s to zero mean and unit variance.
+    """
+
+    def __init__(self, feature_data: list[Point]) -> None:
+        self.feature_data: list[Point] | list[list[float]] = feature_data
+        self.means: list[float] = []
+        self.variances: list[float] = []
+        self.refs: list[object] = []
+
+    def normalize_features(self) -> list[Point]:
+        """
+        Normalize the stored points and return them.
+        """
+        self.points_to_arr()
+        transposed_features = self.transpose_matrix(self.feature_data)
+        self.means, self.variances = self.get_statistics(transposed_features)
+        trans_normed_features = self.normalize(transposed_features)
+        self.feature_data = self.transpose_matrix(trans_normed_features)
+        return self.arr_to_points()
+
+    def points_to_arr(self) -> None:
+        """
+        Convert the stored points into plain coordinate lists.
+        """
         arr = []
-        for p in self.featureData:
+        for p in self.feature_data:
             arr.append(p.coords)
             self.refs.append(p.reference)
-        self.featureData = arr
-        return True
+        self.feature_data = arr
 
-    def arr2Points(self):
-        from clusterKMeans import Point
+    def arr_to_points(self) -> list[Point]:
+        """
+        Convert the stored coordinate lists back into points.
+        """
+        from .clusterKMeans import Point
+
         points = []
-        for a in self.featureData:
+        for a in self.feature_data:
             ref = self.refs.pop(0)
-            points.append(Point(a,ref))
-        self.featureData = points
-    
-    def transposeMatrix(self,matrix):
-        transposedMatrix = []
-        for row in matrix:
-            index = 0
-            for value in row:
-                try:
-                    transposedMatrix[index].append(value)
-                except:
-                    transposedMatrix.append([value])
-                index += 1
-        return transposedMatrix
-    
-    def getStastics(self,matrix):
+            points.append(Point(a, ref))
+        self.feature_data = points
+        return points
+
+    def transpose_matrix(self, matrix: list[list[float]]) -> list[list[float]]:
+        """
+        Transpose a matrix given as a list of rows.
+        """
+        return [list(column) for column in zip(*matrix)]
+
+    def get_statistics(self, matrix: list[list[float]]) -> tuple[list[float], list[float]]:
+        """
+        Compute per-row mean and variance (floored at 0.001).
+        """
         means = []
-        vars = [] 
+        variances = []
         for line in matrix:
-            sum = 0
-            var = 0
-            for value in line:
-                sum += value
-                var += value * value
             n = len(line)
-            mean = sum/n
+            mean = sum(line) / n
+            variance = sum(value * value for value in line) / n - mean * mean
             means.append(mean)
-            var = var/n - mean*mean
-            if (var > 0.001):
-                vars.append(var)
-            else:
-                vars.append(0.001)
-        return means,vars
-    
-    def normalize(self,matrix):
-        index = 0
-        normMatrix = []
-        #print("Means : "+str(self.means))
-        #print("Vars : "+str(self.vars))
-        for line in matrix:
-            newLine = []
+            variances.append(variance if variance > 0.001 else 0.001)
+        return means, variances
+
+    def normalize(self, matrix: list[list[float]]) -> list[list[float]]:
+        """
+        Normalize each row of the matrix using the stored means and variances.
+        """
+        norm_matrix = []
+        for index, line in enumerate(matrix):
             mean = self.means[index]
-            std = math.sqrt(self.vars[index])
-            for value in line:
-                newLine.append((float(value)-mean)/std)
-            normMatrix.append(newLine)
-            index += 1
-        return normMatrix
-    
-    def normalizeVector(self,vector):
-        normedVector = []
-        index = 0
-        means = self.means
-        vars = self.vars
-        for value in vector:
-            normedVector.append((float(value)-means[index])/math.sqrt(vars[index]))
-            index += 1
-        return normedVector
+            std = math.sqrt(self.variances[index])
+            norm_matrix.append([(float(value) - mean) / std for value in line])
+        return norm_matrix
+
+    def normalize_vector(self, vector: list[float]) -> list[float]:
+        """
+        Normalize a single feature vector using the stored means and variances.
+        """
+        return [
+            (float(value) - self.means[index]) / math.sqrt(self.variances[index])
+            for index, value in enumerate(vector)
+        ]
