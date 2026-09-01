@@ -7,15 +7,15 @@ Date: 1st September 2026
 
 from __future__ import annotations
 
-import argparse
 import math
 import operator
 import random
-import sys
-import traceback
 
 from . import clusterKMeans
+from .utils.logging import get_logger
 
+log = get_logger("selector")
+SEED = 1234
 
 class Selector:
     """
@@ -23,7 +23,6 @@ class Selector:
     """
 
     def __init__(self, cutoff: int) -> None:
-        self.print_errs = True
         self.solvers: list[str] = []
         self._feature_data_dic: dict[str, list[float]] = {}
         self._runtime_data_dic: dict[str, list[float]] = {}
@@ -55,17 +54,14 @@ class Selector:
                             pass
                     if values:  # filter empty lines
                         if inst_name in self._feature_data_dic:
-                            sys.stderr.write(f"Warning Overwrite: duplication of feature data for {inst_name}\n")
+                            log.warning("duplication of feature data for %s, overwriting", inst_name)
                         self._feature_data_dic[inst_name] = values
         except OSError:
-            if self.print_errs:
-                traceback.print_exc(file=sys.stderr)
-                sys.stderr.flush()
+            log.error("failed to parse feature file %s", feature_file, exc_info=True)
             return False
-        if __debug__:
-            print(">>>Feature Data:<<<")
-            print(self._feature_data_dic)
-        print("Reading Features was sucessful!")
+        log.debug(">>>Feature Data:<<<")
+        log.debug(self._feature_data_dic)
+        log.info("Reading Features was successful!")
         return True
 
     def parse_runtimes(self, runtimefile: str) -> bool:
@@ -90,17 +86,14 @@ class Selector:
                             pass
                     if values:  # filter empty lines
                         if inst_name in self._runtime_data_dic:
-                            sys.stderr.write(f"Warning Overwrite: duplication of runtime data for {inst_name}\n")
+                            log.warning("duplication of runtime data for %s, overwriting", inst_name)
                         self._runtime_data_dic[inst_name] = values
         except OSError:
-            if self.print_errs:
-                traceback.print_exc(file=sys.stderr)
-                sys.stderr.flush()
+            log.error("failed to parse runtime file %s", runtimefile, exc_info=True)
             return False
-        if __debug__:
-            print(">>>Runtime Data:<<<")
-            print(self._runtime_data_dic)
-        print("Reading Runtimes was sucessful!")
+        log.debug(">>>Runtime Data:<<<")
+        log.debug(self._runtime_data_dic)
+        log.info("Reading Runtimes was successful!")
         return True
 
     def random_test_training_split(self) -> None:
@@ -109,14 +102,14 @@ class Selector:
 
         :return: None
         """
-        random.seed(1234)
+        random.seed(SEED)
         instances = list(self._runtime_data_dic.keys())
         n = len(instances)
-        print(">>> Test Instances (remaining instances are used as training instances): ")
+        log.debug(">>> Test Instances (remaining instances are used as training instances): ")
         for index in range(n // 2):
             s_instance = random.randint(0, n - index - 1)
             instance = instances.pop(s_instance)
-            print(f"{instance}")
+            log.debug(instance)
             self._runtime_data_dic.pop(instance)
             self._feature_data_dic.pop(instance, None)
 
@@ -138,17 +131,17 @@ class Selector:
             if length_feats == -1 and features is not None:
                 length_feats = len(features)
             if features is None:
-                sys.stderr.write(f"Warning: there are runtime data but no features available for {inst}\n")
+                log.warning("there are runtime data but no features available for %s", inst)
                 self._clusters[inst] = "f"  # mark instances with failed feature extraction
                 continue
             if len(features) != length_feats:
-                sys.stderr.write(f"Warning: Invalid number of features for {inst} : {len(features)}\n")
+                log.warning("Invalid number of features for %s : %s", inst, len(features))
                 self._clusters[inst] = "f"
                 continue
             if sum(features) == 0.0:  # error output of feature extraction
                 continue
             if math.isnan(sum(features)) or math.isinf(sum(features)):
-                sys.stderr.write(f"Warning: feature data include NAN or INF in {inst}\n")
+                log.warning("feature data include NAN or INF in %s", inst)
                 self._clusters[inst] = "f"
                 continue
             # else everything is ok
@@ -159,7 +152,7 @@ class Selector:
             available += 1
         self._runtime_data_dic = runtime_data_dic_local
         self._feature_data_dic = feature_data_dic_local
-        print(f">>> Available Data :{available}")
+        print(f">> Available Data: {available}")
 
     def clustering(self, reps: int) -> None:
         """
@@ -169,7 +162,7 @@ class Selector:
         :return: None
         """
         # seed, feature, reps, clus, findK, readIn
-        cluster_list = clusterKMeans.do_cluster(123456, self._feature_data_dic, reps, -1, 10, False)
+        cluster_list = clusterKMeans.do_cluster(SEED, self._feature_data_dic, reps, -1, 10, False)
         cluster_index = 0
 
         for clu in cluster_list:
@@ -179,9 +172,8 @@ class Selector:
         self._n_clusters = cluster_index + 1
 
         for inst, cluster in self._clusters.items():
-            print(f"{inst},{cluster}")
-        print("")
-        print(f"Data in Clusters: {len(self._clusters)}")
+            log.debug("%s,%s", inst, cluster)
+        log.info("Data in Clusters: %s", len(self._clusters))
 
     def select(self, n: int, frac: float, agg: str, dist: str) -> list[str]:
         """
@@ -193,14 +185,14 @@ class Selector:
         :param dist: select distribution (gauss or uni)
         :return: samples: list of instances
         """
-        random.seed(1234)
+        random.seed(SEED)
         samples: list[str] = []
         sampled = 0
         sorted_inst = self.sort_inst(agg)
-        print(f"Number of Clusters {self._n_clusters}")
+        log.info("Number of Clusters %s", self._n_clusters)
         cluster_reps = self._n_clusters * [0.0]
         mean, variance = self.get_runtime_statistics(sorted_inst)
-        print(f"Mean: {mean}\t Variance: {variance}")
+        log.info("Mean: %s\t Variance: %s", mean, variance)
         while sampled < n and sorted_inst != []:
             if dist == "gauss":
                 sample = random.gauss(mean, math.sqrt(variance))
@@ -214,16 +206,16 @@ class Selector:
                 raise ValueError(f"Unknown distribution: {dist}")
             inst, agg_value = self.find_nearest(sample, sorted_inst)
             inst = inst.split(",")[0]
-            print((inst, agg_value))
+            log.debug("%s, %s", inst, agg_value)
             cluster = self._clusters[inst]
-            print(f"Cluster: {cluster}")
+            log.debug("Cluster: %s", cluster)
             if not self.is_overrepresented(cluster, cluster_reps, frac, n) and samples.count(inst) == 0:
                 samples.append(inst)
                 sampled += 1
-                print("ACCEPTED")
+                log.debug("ACCEPTED")
             else:
-                print("REJECTED")
-        print(f"Remaining Instances: {len(sorted_inst)}")
+                log.debug("REJECTED")
+        log.info("Remaining Instances: %s", len(sorted_inst))
         self.samples = samples
         return samples
 
@@ -244,7 +236,7 @@ class Selector:
         for rem in removeable:
             self._runtime_data_dic.pop(rem)
             self._feature_data_dic.pop(rem)
-        print(f"Remaining Instances after Easy Filtering: {len(self._runtime_data_dic)}")
+        log.info("Remaining Instances after Easy Filtering: %s", len(self._runtime_data_dic))
 
     def sort_inst(self, agg: str) -> list[tuple[str, float]]:
         """
@@ -341,7 +333,7 @@ class Selector:
 
         :param samples: list of instance names
         """
-        print(f">>>>>>>>>> Selected Instances ({len(samples)}):")
+        print(f">> Selected Instances ({len(samples)}):")
         for s in samples:
             print(s)
 
@@ -351,19 +343,20 @@ class Selector:
 
         :param samples: list of instance names
         """
-        print("CSV of runtimes samples")
+        log.info("-" * 30)
+        log.info("CSV of runtimes samples")
         sums = self.get_vector(0, len(self.runtime_data[0]))
         timeouts = self.get_vector(0, len(self.runtime_data[0]))
-        print(",".join(self.solvers) + ",Min,Avg")
+        log.info(",".join(self.solvers) + ",Min,Avg")
         for s in samples:
             times = self._runtime_data_dic[s]
             for index, t in enumerate(times):
                 if t == self.cutoff:
                     timeouts[index] += 1
                 sums[index] += t
-            print(f"{s},{','.join(self.to_str_list(times))},{min(times)},{sum(times) / len(times)}")
-        print("SUM:" + "," + ",".join(self.to_str_list(sums)))
-        print("Timeouts:" + "," + ",".join(self.to_str_list(timeouts)))
+            log.info(f"{s},{','.join(self.to_str_list(times))},{min(times)},{sum(times) / len(times)}")
+        log.info("SUM:" + "," + ",".join(self.to_str_list(sums)))
+        log.info("Timeouts:" + "," + ",".join(self.to_str_list(timeouts)))
 
     def features_of_samples(self, samples: list[str]) -> None:
         """
@@ -372,10 +365,11 @@ class Selector:
         :param samples: list of instance names
         :return: None
         """
-        print("CSV of feature samples")
+        log.info("-" * 30)
+        log.info("CSV of feature samples")
         for s in samples:
             feats = self._feature_data_dic[s]
-            print(f"{s},{','.join(self.to_str_list(feats))}")
+            log.info(f"{s},{','.join(self.to_str_list(feats))}")
 
     def to_str_list(self, values: list) -> list[str]:
         """
@@ -392,17 +386,18 @@ class Selector:
 
         :return: None
         """
-        print("Cluster Distribution:")
-        print("")
-        print("Complete Set")
+        log.info("-" * 30)
+        log.info("Cluster Distribution:")
+        log.info("")
+        log.info("Complete Set")
         cluster_dist: dict[int | str, int] = {}
         for cluster in self._clusters.values():
             cluster_dist[cluster] = cluster_dist.get(cluster, 0) + 1
-        print(cluster_dist)
-        print("")
-        print("Selected Set")
+        log.info(cluster_dist)
+        log.info("")
+        log.info("Selected Set")
         cluster_dist = {}
         for inst in self.samples:
             cluster = self._clusters[inst]
             cluster_dist[cluster] = cluster_dist.get(cluster, 0) + 1
-        print(cluster_dist)
+        log.info(cluster_dist)

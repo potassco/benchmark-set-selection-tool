@@ -9,6 +9,7 @@ Date: 1st September 2026
 """
 
 from __future__ import annotations
+from .utils.logging import get_logger
 
 import argparse
 import math
@@ -19,6 +20,7 @@ from typing import Any
 
 from .zNormalizer import ZNormalizer
 
+log = get_logger("selector")
 
 class Point:
     """
@@ -128,8 +130,15 @@ def cluster(points: list[Point], k: int) -> tuple[list[Cluster], float]:
     max_iterations = 1000
     clusters = kmeans(points, k, cutoff, max_iterations)
 
-    quals = sum(c.get_quality() * len(c.points) for c in clusters)
-    return clusters, quals / len(points)
+    log.debug("Quality: ")
+    quals = 0.0
+    for i, c in enumerate(clusters):
+        qual = c.get_quality()
+        log.debug(f"Cluster {i}: {qual} \t Mass : {len(c.points)}")
+        quals += qual * len(c.points)
+    overall = quals / len(points)
+    log.debug(f"Overall : {overall}")
+    return clusters, overall
 
 
 def parse_features(feature_file: str) -> dict[str, Point]:
@@ -150,13 +159,13 @@ def parse_features(feature_file: str) -> dict[str, Point]:
                     pass
             if values and (n_feats == -1 or len(values) == n_feats):
                 if inst_name in points:
-                    sys.stderr.write(f"Warning Overwrite: duplication of feature data for {inst_name}\n")
+                    log.warning(f"Warning Overwrite: duplication of feature data for {inst_name}\n")
                 points[inst_name] = Point(values, inst_name)
                 if n_feats == -1:
                     n_feats = len(values)
             else:
-                sys.stderr.write(f"WARNING: {inst_name} has the wrong number of dimensions\n")
-                sys.stderr.write(f"{values}\n")
+                log.warning(f"WARNING: {inst_name} has the wrong number of dimensions\n")
+                log.warning(f"{values}\n")
     return points
 
 
@@ -172,9 +181,9 @@ def execute_clustering(points: list[Point], reps: int, k: int) -> list[Cluster]:
             best_clusters = clusters
             best_qual = qual
     assert best_clusters is not None
-    print(f"Best Quality: {best_qual}")
+    log.info(f"Best Quality: {best_qual}")
     for i, c in enumerate(best_clusters):
-        print(f"Cluster {i} : {c.get_quality()}\t Mass : {len(c.points)}")
+        log.info(f"Cluster {i} : {c.get_quality()}\t Mass : {len(c.points)}")
     return best_clusters
 
 
@@ -254,8 +263,8 @@ def do_cluster(
                 break
 
         best_k = all_min_dists.index(min(all_min_dists)) + 2
-        print(f"Dists: {all_min_dists}")
-        print(f"Best K: {best_k}")
+        log.info(f"Dists: {all_min_dists}")
+        log.info(f"Best K: {best_k}")
         clusters = execute_clustering(points, reps, best_k)
     else:
         clusters = execute_clustering(points, reps, clus)

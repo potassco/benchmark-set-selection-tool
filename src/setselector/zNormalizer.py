@@ -10,9 +10,14 @@ from __future__ import annotations
 import math
 from typing import TYPE_CHECKING
 
+from .utils.logging import get_logger
+
 if TYPE_CHECKING:
     from .clusterKMeans import Point
 
+
+
+log = get_logger("selector")
 
 class ZNormalizer:
     """
