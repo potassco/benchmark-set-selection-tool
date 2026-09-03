@@ -17,6 +17,7 @@ Repository = "https://github.com/potassco/benchmark-set-selection-tool"
 Issues = "https://github.com/potassco/benchmark-set-selection-tool/issues"
 
 [project.optional-dependencies]
+format = ["black", "isort", "autoflake"]
 lint = ["ruff"]
 typecheck = ["pytest", "ty"]
 test = ["pytest", "pytest-cov", "coverage[toml]"]
