@@ -11,7 +11,9 @@ from .utils.parser import get_parser
 
 def main() -> None:
     """
-    Run the main function.
+    Parse command-line arguments and run benchmark selection.
+
+    :return: None
     """
     parser = get_parser()
     args = parser.parse_args()

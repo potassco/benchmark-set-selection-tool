@@ -9,83 +9,29 @@ Date: 1st September 2026
 """
 
 from __future__ import annotations
-from .utils.logging import get_logger
 
 import argparse
+import contextlib
 import math
 import random
-import sys
-from collections.abc import Iterable, Sequence
-from typing import Any
+from collections.abc import Iterable
 
-from .zNormalizer import ZNormalizer
+from . import Cluster, Point, get_distance
+from .utils.logging import get_logger
+from .zscore_normalizer import ZNormalizer
 
 log = get_logger("selector")
-
-class Point:
-    """
-    A feature vector optionally tagged with a reference (e.g. instance name).
-    """
-
-    def __init__(self, coords: Sequence[float], reference: Any = None) -> None:
-        self.coords = list(coords)
-        self.n = len(self.coords)
-        self.reference = reference
-
-    def __repr__(self) -> str:
-        return str(self.reference)
-
-
-class Cluster:
-    """
-    A cluster of points with a cached centroid.
-    """
-
-    def __init__(self, points: list[Point]) -> None:
-        if len(points) == 0:
-            raise ValueError("ILLEGAL: empty cluster")
-        self.points = points
-        self.n = points[0].n
-        for p in points:
-            if p.n != self.n:
-                raise ValueError("ILLEGAL: wrong dimensions")
-        self.centroid = self.calculate_centroid()
-
-    def __repr__(self) -> str:
-        return str(self.points)
-
-    def update(self, points: list[Point]) -> float:
-        """
-        Assign new points to the cluster and return the centroid shift.
-        """
-        old_centroid = self.centroid
-        self.points = points
-        self.centroid = self.calculate_centroid()
-        return get_distance(old_centroid, self.centroid)
-
-    def calculate_centroid(self) -> Point:
-        """
-        Compute the centroid of the current points.
-        """
-        if self.points:
-            centroid_coords = [
-                sum(p.coords[i] for p in self.points) / len(self.points) for i in range(self.n)
-            ]
-            return Point(centroid_coords)
-        return make_random_point(self.n, -1, 1)
-
-    def get_quality(self) -> float:
-        """
-        Average distance of the points to the centroid.
-        """
-        if not self.points:
-            return 0.0
-        return sum(get_distance(p, self.centroid) for p in self.points) / len(self.points)
 
 
 def kmeans(points: list[Point], k: int, cutoff: float, max_its: int) -> list[Cluster]:
     """
     Run k-means clustering until convergence or the iteration limit is reached.
+
+    :param points: The points to cluster.
+    :param k: The number of clusters.
+    :param cutoff: The convergence threshold for centroid movement.
+    :param max_its: The maximum number of iterations.
+    :return: The final clusters.
     """
     initial = random.sample(points, k)
     clusters = [Cluster([p]) for p in initial]
@@ -106,25 +52,13 @@ def kmeans(points: list[Point], k: int, cutoff: float, max_its: int) -> list[Clu
     return clusters
 
 
-def get_distance(a: Point, b: Point) -> float:
-    """
-    Euclidean distance between two points.
-    """
-    if a.n != b.n:
-        raise ValueError("ILLEGAL: non comparable points")
-    return math.sqrt(sum((a.coords[i] - b.coords[i]) ** 2 for i in range(a.n)))
-
-
-def make_random_point(n: int, lower: float, upper: float) -> Point:
-    """
-    Create a point with random coordinates in [lower, upper].
-    """
-    return Point([random.uniform(lower, upper) for _ in range(n)])
-
-
 def cluster(points: list[Point], k: int) -> tuple[list[Cluster], float]:
     """
     Run a single k-means clustering and return the clusters with their overall quality.
+
+    :param points: The points to cluster.
+    :param k: The number of clusters.
+    :return: The clusters and their overall quality.
     """
     cutoff = 2
     max_iterations = 1000
@@ -144,19 +78,21 @@ def cluster(points: list[Point], k: int) -> tuple[list[Cluster], float]:
 def parse_features(feature_file: str) -> dict[str, Point]:
     """
     Parse a csv feature file into a mapping of instance name to Point.
+
+    :param feature_file: The path to the feature CSV file.
+    :return: Points indexed by instance name.
     """
     points: dict[str, Point] = {}
     n_feats = -1
     with open(feature_file, encoding="utf-8") as fh:
+        _ = fh.readline()
         for line in fh:
             parts = line.split(",")
             inst_name = parts.pop(0)
             values = []
             for value in parts:
-                try:
+                with contextlib.suppress(ValueError):
                     values.append(float(value))
-                except ValueError:
-                    pass
             if values and (n_feats == -1 or len(values) == n_feats):
                 if inst_name in points:
                     log.warning(f"Warning Overwrite: duplication of feature data for {inst_name}\n")
@@ -172,6 +108,11 @@ def parse_features(feature_file: str) -> dict[str, Point]:
 def execute_clustering(points: list[Point], reps: int, k: int) -> list[Cluster]:
     """
     Run several repetitions of k-means and keep the best result.
+
+    :param points: The points to cluster.
+    :param reps: The number of clustering repetitions.
+    :param k: The number of clusters.
+    :return: The highest-quality clustering found.
     """
     best_clusters: list[Cluster] | None = None
     best_qual = float("inf")
@@ -190,6 +131,10 @@ def execute_clustering(points: list[Point], reps: int, k: int) -> list[Cluster]:
 def get_n_parts(points: list[Point], folds: int) -> list[list[Point]]:
     """
     Split points into (roughly) `folds` random partitions.
+
+    :param points: The points to partition.
+    :param folds: The number of partitions.
+    :return: Random point partitions.
     """
     length = len(points)
     index = 0
@@ -217,6 +162,10 @@ def get_n_parts(points: list[Point], folds: int) -> list[list[Point]]:
 def join_folds(parts: Iterable[list[Point]], exclude: int) -> list[Point]:
     """
     Concatenate all but the excluded fold.
+
+    :param parts: The folds to concatenate.
+    :param exclude: The index of the fold to omit.
+    :return: Points from every non-excluded fold.
     """
     joined: list[Point] = []
     for index, part in enumerate(parts):
@@ -235,6 +184,14 @@ def do_cluster(
 ) -> list[Cluster]:
     """
     Cluster instances given either a feature csv file or a feature dictionary.
+
+    :param seed: The random seed used for clustering.
+    :param feature: A feature CSV path or instance-to-feature mapping.
+    :param reps: The number of clustering repetitions.
+    :param clus: The fixed number of clusters when not selecting it automatically.
+    :param find_k: The number of folds used to select the cluster count; non-positive uses `clus`.
+    :param read_in: Whether to read features from a CSV file.
+    :return: The resulting clusters.
     """
     random.seed(seed)
     if read_in:
@@ -274,15 +231,13 @@ def do_cluster(
     return clusters
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # nocoverage
     parser = argparse.ArgumentParser()
     req_group = parser.add_argument_group("Options")
     req_group.add_argument("--csv", dest="csv", action="store", required=True, help="csv file with features")
     req_group.add_argument("--k", dest="k", action="store", required=False, type=int, help="number of clusters")
     req_group.add_argument("--r", dest="r", action="store", required=True, type=int, help="repetitions")
-    req_group.add_argument(
-        "--s", dest="s", action="store", default=1243, required=True, type=int, help="random seed"
-    )
+    req_group.add_argument("--s", dest="s", action="store", default=1243, required=True, type=int, help="random seed")
     req_group.add_argument(
         "--findK",
         dest="findK",
@@ -295,5 +250,3 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     do_cluster(args.s, args.csv, args.r, args.k, args.findK, True)
-
-        

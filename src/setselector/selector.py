@@ -8,15 +8,17 @@ Date: 1st September 2026
 
 from __future__ import annotations
 
+import contextlib
 import math
 import operator
 import random
 
-from . import clusterKMeans
+from . import kmeans_clustering
 from .utils.logging import get_logger
 
 log = get_logger("selector")
 SEED = 1234
+
 
 class Selector:
     """
@@ -24,6 +26,11 @@ class Selector:
     """
 
     def __init__(self, cutoff: int) -> None:
+        """
+        Initialize the selector with the given cutoff time.
+
+        :param cutoff: Runtime cutoff used to identify timeouts.
+        """
         self.solvers: list[str] = []
         self._feature_data_dic: dict[str, list[float]] = {}
         self._runtime_data_dic: dict[str, list[float]] = {}
@@ -49,17 +56,15 @@ class Selector:
                     inst_name = parts.pop(0)
                     values = []
                     for value in parts:
-                        try:
+                        with contextlib.suppress(ValueError):
                             # minimal value -1; negative values are missing values (e.g. -512 satzilla)
                             values.append(max(float(value), -1.0))
-                        except ValueError:
-                            pass
                     if values:  # filter empty lines
                         if inst_name in self._feature_data_dic:
                             log.warning("duplication of feature data for %s, overwriting", inst_name)
                         self._feature_data_dic[inst_name] = values
         except OSError:
-            log.error("failed to parse feature file %s", feature_file, exc_info=True)
+            log.exception("failed to parse feature file %s", feature_file)
             return False
         log.debug(">>>Feature Data:<<<")
         log.debug(self._feature_data_dic)
@@ -82,16 +87,14 @@ class Selector:
                     inst_name = parts.pop(0)
                     values = []
                     for value in parts:
-                        try:
+                        with contextlib.suppress(ValueError):
                             values.append(min(self.cutoff, float(value)))
-                        except ValueError:
-                            pass
                     if values:  # filter empty lines
                         if inst_name in self._runtime_data_dic:
                             log.warning("duplication of runtime data for %s, overwriting", inst_name)
                         self._runtime_data_dic[inst_name] = values
         except OSError:
-            log.error("failed to parse runtime file %s", runtimefile, exc_info=True)
+            log.exception("failed to parse runtime file %s", runtimefile)
             return False
         log.debug(">>>Runtime Data:<<<")
         log.debug(self._runtime_data_dic)
@@ -164,7 +167,7 @@ class Selector:
         :return: None
         """
         # seed, feature, reps, clus, findK, readIn
-        cluster_list = clusterKMeans.do_cluster(SEED, self._feature_data_dic, reps, -1, 10, False)
+        cluster_list = kmeans_clustering.do_cluster(SEED, self._feature_data_dic, reps, -1, 10, False)
         cluster_index = 0
 
         for clu in cluster_list:
@@ -211,6 +214,8 @@ class Selector:
             log.debug("%s, %s", inst, agg_value)
             cluster = self._clusters[inst]
             log.debug("Cluster: %s", cluster)
+            if not isinstance(cluster, int):
+                continue
             if not self.is_overrepresented(cluster, cluster_reps, frac, n) and samples.count(inst) == 0:
                 samples.append(inst)
                 sampled += 1
@@ -304,14 +309,14 @@ class Selector:
         variance = total_sqr / n - mean * mean
         return mean, variance
 
-    def is_overrepresented(self, cluster: int | str, cluster_reps: list[float], frac: float, n: int) -> bool:
+    def is_overrepresented(self, cluster: int, cluster_reps: list[float], frac: float, n: int) -> bool:
         """
         Check whether cluster is overrepresented wrt. fract.
 
-        :param cluster: selected cluster (int)
+        :param cluster: selected cluster
         :param cluster_reps: list of selection likelihood of clusters
-        :param frac: maximal cluster representation fraction (float)
-        :param n: number of instances to select (int)
+        :param frac: maximal cluster representation fraction
+        :param n: number of instances to select
         :return: True or False
         """
         if cluster_reps[cluster] <= frac:
@@ -334,6 +339,7 @@ class Selector:
         Print sampled instances.
 
         :param samples: list of instance names
+        :return: None
         """
         print(f">> Selected Instances ({len(samples)}):")
         for s in samples:
@@ -344,6 +350,7 @@ class Selector:
         Print runtimes of sampled instances and aggregation per solver (sum and #timeouts).
 
         :param samples: list of instance names
+        :return: None
         """
         log.info("-" * 30)
         log.info("CSV of runtimes samples")

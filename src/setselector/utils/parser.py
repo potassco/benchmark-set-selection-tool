@@ -5,7 +5,7 @@ The command line parser for the project.
 from argparse import ArgumentParser
 from importlib import metadata
 from textwrap import dedent
-from typing import Any, Optional, cast
+from typing import Any, cast
 
 from . import logging
 
@@ -20,12 +20,10 @@ def get_parser() -> ArgumentParser:
     """
     parser = ArgumentParser(
         prog="setselector",
-        description=dedent(
-            """\
+        description=dedent("""\
             setselector
             filldescription
-            """
-        ),
+            """),
     )
     levels = [
         ("error", logging.ERROR),
@@ -34,7 +32,7 @@ def get_parser() -> ArgumentParser:
         ("debug", logging.DEBUG),
     ]
 
-    def get(levels: list[tuple[str, int]], name: str) -> Optional[int]:
+    def get(levels: list[tuple[str, int]], name: str) -> int | None:
         for key, val in levels:
             if key == name:
                 return val
@@ -56,7 +54,11 @@ def get_parser() -> ArgumentParser:
         "--runtimes", dest="times", action="store", required=True, help="runtimes in csv (first col with instance names"
     )
     req_group.add_argument(
-        "--features", dest="feats", action="store", required=True, help="instance features in csv (first col with instance names"
+        "--features",
+        dest="feats",
+        action="store",
+        required=True,
+        help="instance features in csv (first col with instance names",
     )
     req_group.add_argument("--cutoff", dest="cutoff", action="store", type=int, required=True, help="cutoff time")
     req_group.add_argument("--n", dest="n", action="store", type=int, required=True, help="desired number of instances")
@@ -66,7 +68,12 @@ def get_parser() -> ArgumentParser:
         "--reps", dest="reps", action="store", default=100, type=int, help="repetitions of kmeans clustering"
     )
     opt_group.add_argument(
-        "--frac", dest="frac", action="store", default=0.2, type=float, help="maximum representation of each cluster [0,1]"
+        "--frac",
+        dest="frac",
+        action="store",
+        default=0.2,
+        type=float,
+        help="maximum representation of each cluster [0,1]",
     )
     opt_group.add_argument(
         "--easyK",
@@ -85,7 +92,12 @@ def get_parser() -> ArgumentParser:
         help="aggregation of instance runtimes",
     )
     opt_group.add_argument(
-        "--dist", dest="dist", action="store", default="gauss", choices=["gauss", "uni", "exp", "log"], help="sample distribution"
+        "--dist",
+        dest="dist",
+        action="store",
+        default="gauss",
+        choices=["gauss", "uni", "exp", "log"],
+        help="sample distribution",
     )
     opt_group.add_argument(
         "--split",
