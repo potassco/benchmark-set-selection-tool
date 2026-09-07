@@ -282,7 +282,7 @@ class Selector:
                 sorted_tuples.pop(index)
                 return inst, avg
             if avg > value and last_inst is not None:
-                if avg - value < last_avg - value:
+                if abs(avg - value) < abs(last_avg - value):
                     sorted_tuples.pop(index)
                     return inst, avg
                 sorted_tuples.pop(index - 1)
@@ -364,8 +364,8 @@ class Selector:
                     timeouts[index] += 1
                 sums[index] += t
             log.info(f"{s},{','.join(self.to_str_list(times))},{min(times)},{sum(times) / len(times)}")
-        log.info("SUM:" + "," + ",".join(self.to_str_list(sums)))
-        log.info("Timeouts:" + "," + ",".join(self.to_str_list(timeouts)))
+        log.info("SUM:" + ",".join(self.to_str_list(sums)))
+        log.info("Timeouts:" + ",".join(self.to_str_list(timeouts)))
 
     def features_of_samples(self, samples: list[str]) -> None:
         """
