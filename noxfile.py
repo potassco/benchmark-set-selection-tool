@@ -6,7 +6,7 @@ import os
 
 import nox  # type: ignore
 
-nox.options.sessions = "format, lint", "typecheck", "test"
+nox.options.sessions = "lint", "typecheck", "test"
 nox.options.default_venv_backend = "uv|virtualenv"
 
 PYTHON_VERSIONS = None

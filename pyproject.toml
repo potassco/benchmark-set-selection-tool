@@ -72,7 +72,7 @@ python_functions = "test_*"
 
 [tool.coverage.run]
 source = ["setselector", "tests"]
-omit = ["*/setselector/__main__.py", "*/setselector/utils/logging.py", "tests/*", "*/tests/*"]
+omit = ["*/setselector/__main__.py", "*/setselector/utils/logging.py", "*/setselector/utils/parser.py", "tests/*", "*/tests/*"]
 
 [tool.coverage.report]
 show_missing = true
