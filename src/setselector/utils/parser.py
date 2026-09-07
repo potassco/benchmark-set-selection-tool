@@ -60,12 +60,31 @@ def get_parser() -> ArgumentParser:
         required=True,
         help="instance features in csv (first col with instance names",
     )
-    req_group.add_argument("--cutoff", dest="cutoff", action="store", type=int, required=True, help="cutoff time")
-    req_group.add_argument("--n", dest="n", action="store", type=int, required=True, help="desired number of instances")
+    req_group.add_argument(
+        "--cutoff",
+        dest="cutoff",
+        action="store",
+        type=int,
+        required=True,
+        help="cutoff time (default: %(default)s)",
+    )
+    req_group.add_argument(
+        "--n",
+        dest="n",
+        action="store",
+        type=int,
+        required=True,
+        help="desired number of instances (default: %(default)s)",
+    )
 
     opt_group = parser.add_argument_group("Optional Options")
     opt_group.add_argument(
-        "--reps", dest="reps", action="store", default=100, type=int, help="repetitions of kmeans clustering"
+        "--reps",
+        dest="reps",
+        action="store",
+        default=100,
+        type=int,
+        help="repetitions of kmeans clustering (default: %(default)s)",
     )
     opt_group.add_argument(
         "--frac",
@@ -73,7 +92,7 @@ def get_parser() -> ArgumentParser:
         action="store",
         default=0.2,
         type=float,
-        help="maximum representation of each cluster [0,1]",
+        help="maximum representation of each cluster [0,1] (default: %(default)s)",
     )
     opt_group.add_argument(
         "--easyK",
@@ -81,7 +100,7 @@ def get_parser() -> ArgumentParser:
         action="store",
         default=0.1,
         type=float,
-        help="remove too easy instances (solved by all solvers and avg runtimes < k*cutoff)",
+        help="remove too easy instances (solved by all solvers and avg runtimes < k*cutoff) (default: %(default)s)",
     )
     opt_group.add_argument(
         "--aggregate",
@@ -89,7 +108,7 @@ def get_parser() -> ArgumentParser:
         action="store",
         default="avg",
         choices=["avg", "min", "ind"],
-        help="aggregation of instance runtimes",
+        help="aggregation of instance runtimes (default: %(default)s)",
     )
     opt_group.add_argument(
         "--dist",
@@ -97,7 +116,7 @@ def get_parser() -> ArgumentParser:
         action="store",
         default="gauss",
         choices=["gauss", "uni", "exp", "log"],
-        help="sample distribution",
+        help="sample distribution (default: %(default)s)",
     )
     opt_group.add_argument(
         "--split",
