@@ -1,6 +1,6 @@
-# setselector
+# Benchmark Set Selection Tool
 
-A tool to sample a benchmark set from a larger base set (or distribution) comprising a large variety of instances.
+A tool for sampling a benchmark set from a larger base set or distribution containing a wide variety of instances.
 
 ## Installation
 
@@ -16,4 +16,23 @@ Run the following for basic usage information:
 
 ```bash
 setselector -h
+```
+
+The tool requires runtime and feature data in CSV files.
+The runtime file must contain a header with solver IDs and one row per instance. The first column contains the instance name, followed by the runtime for each solver on that instance.
+The feature file must contain a header with feature IDs and one row per instance. The first column contains the instance name, followed by the feature values for that instance.
+Examples can be found in `./example/`.
+
+The following command selects around five instances with a runtime cutoff of 300.
+Instances on which all solvers time out are excluded. Instances for which all solvers finish below `cutoff * easyK` are also excluded.
+Use `--log=info` for more detailed output.
+
+!!! note
+
+    The number of instances returned does not always match the requested number.
+    The number of clusters is determined automatically and overrepresentation of clusters is avoided.
+    This can occur, especially for small instance sets.
+
+```bash
+setselector --runtimes ./example/times.csv --features ./example/features.csv --n 5 --cutoff 300
 ```
