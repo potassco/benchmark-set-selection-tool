@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import argparse
 import contextlib
-import math
 import random
 from collections.abc import Iterable
 
@@ -207,9 +206,10 @@ def do_cluster(
 
     if find_k > 0:
         points_parts = get_n_parts(points, find_k)
-
+        min_fold_size = min(len(join_folds(points_parts, i)) for i in range(find_k))
+        k_upper = min(len(points) // 2, min_fold_size)
         all_min_dists = []
-        for k in range(2, int(math.sqrt(len(points) / 2))):
+        for k in range(2, k_upper):
             sum_dist = 0.0
             for i in range(find_k):
                 training = join_folds(points_parts, i)
