@@ -125,12 +125,14 @@ class Selector:
         :return: None
         """
         available = 0
+        too_hard = 0
         runtime_data_dic_local = {}
         feature_data_dic_local = {}
         length_feats = -1
         for inst, times in self._runtime_data_dic.items():
             if sum(times) == len(times) * self.cutoff:  # filter instances with only timeouts
                 self._clusters[inst] = "h"  # mark too hard instances
+                too_hard += 1
                 continue
             features = self._feature_data_dic.get(inst)
             if length_feats == -1 and features is not None:
@@ -157,6 +159,7 @@ class Selector:
             available += 1
         self._runtime_data_dic = runtime_data_dic_local
         self._feature_data_dic = feature_data_dic_local
+        log.info("Too Hard Instances filtered: %s", too_hard)
         print(f">> Available Data: {available}")
 
     def clustering(self, reps: int) -> None:

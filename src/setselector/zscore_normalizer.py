@@ -100,7 +100,6 @@ class ZNormalizer:
             mean = self.means[index]
             std = math.sqrt(self.variances[index])
             norm_matrix.append([(float(value) - mean) / std for value in line])
-        print(norm_matrix)
         return norm_matrix
 
     def normalize_vector(self, vector: list[float]) -> list[float]:

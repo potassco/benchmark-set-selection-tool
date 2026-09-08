@@ -23,6 +23,7 @@ def main() -> None:
 
     if 0 < args.easyK * args.cutoff < 10.0:
         args.easyK = 10.0 / args.cutoff
+        log.info("Adjusted easyK to %f based on cutoff %f", args.easyK, args.cutoff)
 
     selector = Selector(args.cutoff)
     selector.parse_features(args.feats)
