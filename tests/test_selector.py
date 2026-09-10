@@ -2,6 +2,7 @@
 Test cases for the selector module.
 """
 
+from tempfile import NamedTemporaryFile
 from unittest import TestCase, mock
 
 from setselector import Cluster, Point
@@ -60,6 +61,86 @@ class TestSelector(TestCase):
 
         with mock.patch("builtins.open", side_effect=OSError):
             self.assertFalse(selector.parse_runtimes("missing.csv"))
+
+    def test_parse_eval(self) -> None:
+        """
+        Test parsing selected measures and aggregating repeated XML results.
+        """
+        contents = """<evaluation>
+            <benchmark name="bench">
+                <class name="first" id="0">
+                    <instance name="same.lp" id="0"/>
+                </class>
+                <class name="second" id="1">
+                    <instance name="same.lp" id="0"/>
+                </class>
+            </benchmark>
+            <project name="project">
+                <runspec benchmark="bench" system="system-a" setting="setting-a">
+                    <class id="0">
+                        <instance id="0">
+                            <run>
+                                <measure name="tightness" val="0"/>
+                                <measure name="atoms" val="1"/>
+                                <measure name="basic_rules" val="2"/>
+                                <measure name="optimum" val="3"/>
+                                <measure name="time" val="1"/>
+                            </run>
+                            <run>
+                                <measure name="atoms" val="9"/>
+                                <measure name="basic_rules" val="6"/>
+                                <measure name="optimum" val="5"/>
+                                <measure name="time" val="5"/>
+                            </run>
+                        </instance>
+                    </class>
+                </runspec>
+                <runspec benchmark="bench" system="system-b" setting="setting-b">
+                    <class id="0">
+                        <instance id="0">
+                            <run>
+                                <measure name="atoms" val="5"/>
+                                <measure name="basic_rules" val="6"/>
+                                <measure name="optimum" val="5"/>
+                                <measure name="time" val="20"/>
+                            </run>
+                        </instance>
+                    </class>
+                </runspec>
+                <runspec benchmark="bench" system="system-c" setting="setting-c">
+                    <class id="1">
+                        <instance id="0">
+                            <run>
+                                <measure name="atoms" val="10"/>
+                                <measure name="basic_rules" val="8"/>
+                                <measure name="optimum" val="5"/>
+                                <measure name="time" val="4"/>
+                            </run>
+                        </instance>
+                    </class>
+                </runspec>
+            </project>
+        </evaluation>"""
+        selector = Selector(10)
+        with NamedTemporaryFile(mode="w", suffix=".xml") as eval_file:
+            eval_file.write(contents)
+            eval_file.flush()
+            self.assertTrue(selector.parse_eval(eval_file.name))
+
+        self.assertEqual(
+            selector._feature_data_dic,
+            {"first/same.lp": [5.0, 6.0], "second/same.lp": [10.0, 8.0]},
+        )
+        self.assertEqual(selector.solvers, ["system-a/setting-a", "system-b/setting-b", "system-c/setting-c"])
+        self.assertEqual(
+            selector._runtime_data_dic,
+            {"first/same.lp": [3.0, 10.0, 10.0], "second/same.lp": [10.0, 10.0, 4.0]},
+        )
+
+        with NamedTemporaryFile(mode="w", suffix=".xml") as eval_file:
+            eval_file.write("<invalid>")
+            eval_file.flush()
+            self.assertFalse(selector.parse_eval(eval_file.name))
 
     def test_random_test_training_split(self) -> None:
         """

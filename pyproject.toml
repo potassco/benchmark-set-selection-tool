@@ -7,6 +7,7 @@ name = "setselector"
 authors = [{ name = "Tom Schmidt" },{ name = "Marius Lindauer"}]
 description = "Benchmark-Set-Selection-Tool."
 requires-python = ">=3.12"
+dependencies = ["lxml"]
 license = { file = "LICENSE" }
 dynamic = ["version"]
 readme = "README.md"
@@ -19,7 +20,7 @@ Issues = "https://github.com/potassco/benchmark-set-selection-tool/issues"
 [project.optional-dependencies]
 format = ["black", "isort", "autoflake"]
 lint = ["ruff"]
-typecheck = ["pytest", "ty"]
+typecheck = ["pytest", "ty", "lxml-stubs"]
 test = ["pytest", "pytest-cov", "coverage[toml]"]
 doc = ["zensical", "mkdocstrings-python"]
 dev = ["setselector[test,typecheck,lint]"]

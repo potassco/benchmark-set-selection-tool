@@ -12,6 +12,10 @@ import contextlib
 import math
 import operator
 import random
+import statistics
+from typing import cast
+
+from lxml import etree
 
 from . import kmeans_clustering
 from .utils.logging import get_logger
@@ -99,6 +103,73 @@ class Selector:
         log.debug(">>>Runtime Data:<<<")
         log.debug(self._runtime_data_dic)
         log.info("Reading Runtimes was successful!")
+        return True
+
+    def parse_eval(self, evalfile: str) -> bool:
+        """
+        Parse evaluation XML file.
+
+        :param evalfile: XML file with evaluation data (produced by benchmark-tool)
+        :return: True if successful, False otherwise.
+        """
+        # maybe add an option to select features
+        features = ("tightness", "atoms", "rules", "basic_rules", "constraint_rules", "choice_rules", "weight_rules")
+        # currently features are collected for each instance run
+        # median is used to merge duplicates
+
+        try:
+            root = etree.parse(evalfile).getroot()
+        except (OSError, etree.XMLSyntaxError):
+            log.exception("failed to parse evaluation file %s", evalfile)
+            return False
+
+        instances = {
+            (benchmark.get("name"), benchmark_class.get("id"), instance.get("id")): (
+                f"{benchmark_class.get('name')}/{instance.get('name')}"
+            )
+            for benchmark in cast("list[etree._Element]", root.xpath("./benchmark"))
+            for benchmark_class in cast("list[etree._Element]", benchmark.xpath("./class"))
+            for instance in cast("list[etree._Element]", benchmark_class.xpath("./instance"))
+        }
+        feature_values: dict[str, dict[str, list[float]]] = {}
+        runtime_values: dict[str, list[float]] = {}
+
+        runspecs = cast("list[etree._Element]", root.xpath(".//runspec"))
+        self.solvers = [f"{runspec.get('system')}/{runspec.get('setting')}" for runspec in runspecs]
+        for runspec_index, runspec in enumerate(runspecs):
+            benchmark = runspec.get("benchmark")
+            for benchmark_class in cast("list[etree._Element]", runspec.xpath("./class")):
+                for instance in cast("list[etree._Element]", benchmark_class.xpath("./instance")):
+                    name = instances.get((benchmark, benchmark_class.get("id"), instance.get("id")))
+                    if name is None:  # nocoverage
+                        continue
+                    measures = feature_values.setdefault(name, {feature: [] for feature in features})
+                    for feature in features:
+                        with contextlib.suppress(ValueError):
+                            measures[feature].extend(
+                                float(value)
+                                for value in cast("list[str]", instance.xpath(f".//measure[@name='{feature}']/@val"))
+                            )
+                    with contextlib.suppress(ValueError):
+                        times = [
+                            float(value) for value in cast("list[str]", instance.xpath(".//measure[@name='time']/@val"))
+                        ]
+                        if times:
+                            runtime_values.setdefault(name, len(runspecs) * [float(self.cutoff)])[runspec_index] = min(
+                                self.cutoff, statistics.median(times)
+                            )
+
+        common_features = [
+            feature for feature in features if all(measures[feature] for measures in feature_values.values())
+        ]
+        self._feature_data_dic.update(
+            {
+                name: [statistics.median(measures[feature]) for feature in common_features]
+                for name, measures in feature_values.items()
+            }
+        )
+        self._runtime_data_dic.update(runtime_values)
+        log.info("Reading evaluation data was successful!")
         return True
 
     def random_test_training_split(self) -> None:

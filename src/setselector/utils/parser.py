@@ -49,17 +49,24 @@ def get_parser() -> ArgumentParser:
 
     parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {VERSION}")
 
-    req_group = parser.add_argument_group("Required Options")
-    req_group.add_argument(
-        "--runtimes", dest="times", action="store", required=True, help="runtimes in csv (first col with instance names"
+    input_group = parser.add_argument_group("Input Options")
+    input_group.add_argument(
+        "--runtimes", dest="times", action="store", help="runtimes in csv (first col with instance names)"
     )
-    req_group.add_argument(
+    input_group.add_argument(
         "--features",
         dest="feats",
         action="store",
-        required=True,
-        help="instance features in csv (first col with instance names",
+        help="instance features in csv (first col with instance names)",
     )
+    input_group.add_argument(
+        "--eval",
+        dest="eval",
+        action="store",
+        help="evaluation data in xml (produced by benchmark-tool)",
+    )
+
+    req_group = parser.add_argument_group("Required Options")
     req_group.add_argument(
         "--cutoff",
         dest="cutoff",
