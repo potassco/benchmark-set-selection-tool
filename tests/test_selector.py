@@ -80,7 +80,7 @@ class TestSelector(TestCase):
                     <class id="0">
                         <instance id="0">
                             <run>
-                                <measure name="tightness" val="0"/>
+                                <measure name="tight" val="0"/>
                                 <measure name="atoms" val="1"/>
                                 <measure name="basic_rules" val="2"/>
                                 <measure name="optimum" val="3"/>
@@ -122,10 +122,10 @@ class TestSelector(TestCase):
             </project>
         </evaluation>"""
         selector = Selector(10)
-        with NamedTemporaryFile(mode="w", suffix=".xml") as eval_file:
+        with NamedTemporaryFile(mode="w", suffix=".xml", delete_on_close=False) as eval_file:
             eval_file.write(contents)
-            eval_file.flush()
-            self.assertTrue(selector.parse_eval(eval_file.name))
+            eval_file.close()
+            self.assertTrue(selector.parse_eval(eval_file.name, "atoms,basic_rules,tight"))
 
         self.assertEqual(
             selector._feature_data_dic,
@@ -137,10 +137,10 @@ class TestSelector(TestCase):
             {"first/same.lp": [3.0, 10.0, 10.0], "second/same.lp": [10.0, 10.0, 4.0]},
         )
 
-        with NamedTemporaryFile(mode="w", suffix=".xml") as eval_file:
+        with NamedTemporaryFile(mode="w", suffix=".xml", delete_on_close=False) as eval_file:
             eval_file.write("<invalid>")
-            eval_file.flush()
-            self.assertFalse(selector.parse_eval(eval_file.name))
+            eval_file.close()
+            self.assertFalse(selector.parse_eval(eval_file.name, "atoms,basic_rules,tight"))
 
     def test_random_test_training_split(self) -> None:
         """
@@ -347,6 +347,10 @@ class TestSelector(TestCase):
                 mock.call("Timeouts:0,1"),
             ],
         )
+
+        with mock.patch.object(log, "warning") as log_mock:
+            selector.runtime_of_samples([])
+            log_mock.assert_called_once()
 
     def test_features_of_samples(self) -> None:
         """

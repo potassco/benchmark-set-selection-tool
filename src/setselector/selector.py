@@ -105,18 +105,17 @@ class Selector:
         log.info("Reading Runtimes was successful!")
         return True
 
-    def parse_eval(self, evalfile: str) -> bool:
+    def parse_eval(self, evalfile: str, feature_names: str) -> bool:
         """
         Parse evaluation XML file.
 
         :param evalfile: XML file with evaluation data (produced by benchmark-tool)
+        :param feature_names: comma-separated feature names to collect
         :return: True if successful, False otherwise.
         """
-        # maybe add an option to select features
-        features = ("tightness", "atoms", "rules", "basic_rules", "constraint_rules", "choice_rules", "weight_rules")
+        features = list(filter(None, map(str.strip, feature_names.split(","))))
         # currently features are collected for each instance run
         # median is used to merge duplicates
-
         try:
             root = etree.parse(evalfile).getroot()
         except (OSError, etree.XMLSyntaxError):
@@ -426,6 +425,9 @@ class Selector:
         :param samples: list of instance names
         :return: None
         """
+        if not samples:
+            log.warning("No sampled instances provided.")
+            return
         log.info("-" * 30)
         log.info("CSV of runtimes samples")
         sums = self.get_vector(0, len(self.runtime_data[0]))

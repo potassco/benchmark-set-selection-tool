@@ -39,14 +39,20 @@ def main() -> None:
         selector.parse_features(args.feats)
         selector.parse_runtimes(args.times)
     else:
-        selector.parse_eval(args.eval)
+        selector.parse_eval(args.eval, args.eval_features)
+    if not selector._runtime_data_dic or not any(selector._feature_data_dic.values()):
+        parser.error("No usable benchmark data after parsing input. Check input files and options.")
 
     if args.split:
         selector.random_test_training_split()
 
     selector.join_times_features()
+    if not selector._runtime_data_dic:
+        parser.error("No usable benchmark data remains after filtering too hard instances.")
     selector.runtime_of_samples(list(selector._runtime_data_dic.keys()))
     selector.remove_too_easy(args.cutoff, args.easyK)
+    if not selector._runtime_data_dic:
+        parser.error("No usable benchmark data remains after filtering too easy instances.")
     selector.clustering(args.reps)
     samples = selector.select(args.n, args.frac, args.agg, args.dist)
     selector.print_samples(samples)

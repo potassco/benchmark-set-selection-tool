@@ -65,6 +65,13 @@ def get_parser() -> ArgumentParser:
         action="store",
         help="evaluation data in xml (produced by benchmark-tool)",
     )
+    input_group.add_argument(
+        "--eval-features",
+        dest="eval_features",
+        action="store",
+        default="rules_s,bodies_s",
+        help="comma-separated features to collect from evaluation data (default: %(default)s)",
+    )
 
     req_group = parser.add_argument_group("Required Options")
     req_group.add_argument(
