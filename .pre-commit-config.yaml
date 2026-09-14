@@ -23,10 +23,3 @@ repos:
         exclude: ^docs/
         additional_dependencies:
           - mdformat-gfm
-
-  - repo: https://github.com/allganize/ty-pre-commit
-    rev: v0.0.46
-    hooks:
-      - id: ty-check
-        exclude: "^(noxfile\\.py|tests/)"
-        additional_dependencies: ["pytest"]
