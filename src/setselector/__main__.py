@@ -47,10 +47,10 @@ def main() -> None:
         selector.random_test_training_split()
 
     selector.join_times_features()
+    selector.remove_too_hard(args.keep_too_hard)
     if not selector._runtime_data_dic:
         parser.error("No usable benchmark data remains after filtering too hard instances.")
-    selector.runtime_of_samples(list(selector._runtime_data_dic.keys()))
-    selector.remove_too_easy(args.cutoff, args.easyK)
+    selector.remove_too_easy(args.easyK, args.keep_too_easy)
     if not selector._runtime_data_dic:
         parser.error("No usable benchmark data remains after filtering too easy instances.")
     selector.clustering(args.reps)

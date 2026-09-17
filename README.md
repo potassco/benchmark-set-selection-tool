@@ -27,9 +27,10 @@ per instance. The first column contains the instance name, followed by the
 feature values for that instance. Examples can be found in `./example/`.
 
 The following command selects around five instances with a runtime cutoff of
-300\. Instances on which all solvers time out are excluded. Instances for which
-all solvers finish below `cutoff * easyK` are also excluded. Use `--log=info`
-for more detailed output.
+300\. Instances on which all solvers time out are excluded by default. Use
+`--keep-too-hard` to retain them. Instances for which all solvers finish below
+`cutoff * easyK` are also excluded by default; use `--keep-too-easy` to retain
+them. Use `--log=info` for more detailed output.
 
 !!! note
 
