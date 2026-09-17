@@ -121,9 +121,9 @@ def execute_clustering(points: list[Point], reps: int, k: int) -> list[Cluster]:
             best_clusters = clusters
             best_qual = qual
     assert best_clusters is not None
-    log.info(f"Best Quality: {best_qual}")
+    log.debug(f"Best Quality: {best_qual}")
     for i, c in enumerate(best_clusters):
-        log.info(f"Cluster {i} : {c.get_quality()}\t Mass : {len(c.points)}")
+        log.debug(f"Cluster {i} : {c.get_quality()}\t Mass : {len(c.points)}")
     return best_clusters
 
 
