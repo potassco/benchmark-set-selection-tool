@@ -195,15 +195,10 @@ class Selector:
         :return: None
         """
         available = 0
-        too_hard = 0
         runtime_data_dic_local = {}
         feature_data_dic_local = {}
         length_feats = -1
         for inst, times in self._runtime_data_dic.items():
-            if sum(times) == len(times) * self.cutoff:  # filter instances with only timeouts
-                self._clusters[inst] = "h"  # mark too hard instances
-                too_hard += 1
-                continue
             features = self._feature_data_dic.get(inst)
             if length_feats == -1 and features is not None:
                 length_feats = len(features)
@@ -229,8 +224,31 @@ class Selector:
             available += 1
         self._runtime_data_dic = runtime_data_dic_local
         self._feature_data_dic = feature_data_dic_local
-        log.info("Too Hard Instances filtered: %s", too_hard)
         print(f">> Available Data: {available}")
+
+    def remove_too_hard(self, keep_too_hard: bool = False) -> None:
+        """
+        Remove instances for which all solvers reached the cutoff.
+
+        :param keep_too_hard: Keep instances for which all solvers timed out.
+        :return: None
+        """
+        total_instances = len(self._runtime_data_dic)
+        removeable = []
+        if not keep_too_hard:
+            for inst, times in self._runtime_data_dic.items():
+                if sum(times) == len(times) * self.cutoff:
+                    removeable.append(inst)
+                    self._clusters[inst] = "h"  # mark too hard instances
+        for rem in removeable:
+            self._runtime_data_dic.pop(rem)
+            self._feature_data_dic.pop(rem)
+        log.info(
+            "Too Hard Instances filtered: %s/%s (remaining: %s)",
+            len(removeable),
+            total_instances,
+            len(self._runtime_data_dic),
+        )
 
     def clustering(self, reps: int) -> None:
         """
@@ -299,24 +317,31 @@ class Selector:
         self.samples = samples
         return samples
 
-    def remove_too_easy(self, cutoff: float, threshold: float) -> None:
+    def remove_too_easy(self, threshold: float, keep_too_easy: bool = False) -> None:
         """
         Remove too easy instances (< threshold*cutoff).
 
-        :param cutoff: of measured runtime
         :param threshold: fraction of cutoff
+        :param keep_too_easy: Keep instances below the easy-instance threshold.
         :return: None
         """
+        total_instances = len(self._runtime_data_dic)
         removeable = []
-        for inst, vec in self._runtime_data_dic.items():
-            maxi = max(vec)
-            if maxi < cutoff and maxi < threshold * cutoff:
-                removeable.append(inst)
-                self._clusters[inst] = "e"  # mark too easy instances
+        if not keep_too_easy:
+            for inst, vec in self._runtime_data_dic.items():
+                maxi = max(vec)
+                if maxi < self.cutoff and maxi < threshold * self.cutoff:
+                    removeable.append(inst)
+                    self._clusters[inst] = "e"  # mark too easy instances
         for rem in removeable:
             self._runtime_data_dic.pop(rem)
             self._feature_data_dic.pop(rem)
-        log.info("Remaining Instances after Easy Filtering: %s", len(self._runtime_data_dic))
+        log.info(
+            "Too Easy Instances filtered: %s/%s (remaining: %s)",
+            len(removeable),
+            total_instances,
+            len(self._runtime_data_dic),
+        )
 
     def sort_inst(self, agg: str) -> list[tuple[str, float]]:
         """

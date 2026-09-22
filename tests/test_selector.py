@@ -161,7 +161,6 @@ class TestSelector(TestCase):
         """
         selector = Selector(10)
         selector._runtime_data_dic = {
-            "hard": [10.0],
             "missing": [1.0],
             "valid": [2.0],
             "wrong_length": [3.0],
@@ -181,7 +180,31 @@ class TestSelector(TestCase):
         self.assertEqual(selector._feature_data_dic, {"valid": [1.0, 2.0]})
         self.assertEqual(selector.runtime_data, [[2.0]])
         self.assertEqual(selector.feature_data, [[1.0, 2.0]])
-        self.assertEqual(selector._clusters, {"hard": "h", "missing": "f", "wrong_length": "f", "nan": "f"})
+        self.assertEqual(selector._clusters, {"missing": "f", "wrong_length": "f", "nan": "f"})
+
+    def test_remove_too_hard(self) -> None:
+        """
+        Test removal and marking of too-hard instances.
+        """
+        selector = Selector(10)
+        selector._runtime_data_dic = {"hard": [10.0], "valid": [2.0]}
+        selector._feature_data_dic = {"hard": [1.0], "valid": [2.0]}
+
+        selector.remove_too_hard()
+
+        self.assertEqual(selector._runtime_data_dic, {"valid": [2.0]})
+        self.assertEqual(selector._feature_data_dic, {"valid": [2.0]})
+        self.assertEqual(selector._clusters, {"hard": "h"})
+
+        selector = Selector(10)
+        selector._runtime_data_dic = {"hard": [10.0]}
+        selector._feature_data_dic = {"hard": [1.0]}
+
+        selector.remove_too_hard(keep_too_hard=True)
+
+        self.assertEqual(selector._runtime_data_dic, {"hard": [10.0]})
+        self.assertEqual(selector._feature_data_dic, {"hard": [1.0]})
+        self.assertEqual(selector._clusters, {})
 
     def test_clustering(self) -> None:
         """
@@ -254,11 +277,21 @@ class TestSelector(TestCase):
         selector._runtime_data_dic = {"easy": [1.0, 2.0], "hard": [1.0, 8.0]}
         selector._feature_data_dic = {"easy": [1.0], "hard": [2.0]}
 
-        selector.remove_too_easy(5.0, 0.5)
+        selector.remove_too_easy(0.5)
 
         self.assertEqual(selector._runtime_data_dic, {"hard": [1.0, 8.0]})
         self.assertEqual(selector._feature_data_dic, {"hard": [2.0]})
         self.assertEqual(selector._clusters, {"easy": "e"})
+
+        selector = Selector(10)
+        selector._runtime_data_dic = {"easy": [1.0, 2.0]}
+        selector._feature_data_dic = {"easy": [1.0]}
+
+        selector.remove_too_easy(0.5, keep_too_easy=True)
+
+        self.assertEqual(selector._runtime_data_dic, {"easy": [1.0, 2.0]})
+        self.assertEqual(selector._feature_data_dic, {"easy": [1.0]})
+        self.assertEqual(selector._clusters, {})
 
     def test_sort_inst(self) -> None:
         """

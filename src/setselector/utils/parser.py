@@ -117,6 +117,18 @@ def get_parser() -> ArgumentParser:
         help="remove too easy instances (solved by all solvers and avg runtimes < k*cutoff) (default: %(default)s)",
     )
     opt_group.add_argument(
+        "--keep-too-hard",
+        dest="keep_too_hard",
+        action="store_true",
+        help="keep instances for which all solvers reached the cutoff",
+    )
+    opt_group.add_argument(
+        "--keep-too-easy",
+        dest="keep_too_easy",
+        action="store_true",
+        help="keep instances solved by all solvers below the easy-instance threshold",
+    )
+    opt_group.add_argument(
         "--aggregate",
         dest="agg",
         action="store",
