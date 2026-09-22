@@ -32,13 +32,10 @@ The following command selects around five instances with a runtime cutoff of
 `cutoff * easyK` are also excluded by default; use `--keep-too-easy` to retain
 them. Use `--log=info` for more detailed output.
 
-!!! note
-
-```
-The number of instances returned does not always match the requested number.
-The number of clusters is determined automatically and overrepresentation of clusters is avoided.
+> [!NOTE]
+> The number of instances returned does not always match the requested number.  
+The number of clusters is determined automatically and overrepresentation of clusters is avoided.  
 This can occur, especially for small instance sets.
-```
 
 ```bash
 setselector --runtimes ./example/times.csv --features ./example/features.csv --n 5 --cutoff 300
