@@ -23,3 +23,4 @@ repos:
         exclude: ^docs/
         additional_dependencies:
           - mdformat-gfm
+          - mdformat-gfm-alerts
