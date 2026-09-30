@@ -11,6 +11,15 @@ Install the project with:
 pip install .
 ```
 
+The documentation can be accessed
+[here](docs.potassco.org/benchmark-set-selection-tool) or build and hosted
+using:
+
+```bash
+pip install .[doc]
+zensical serve
+```
+
 ## Usage
 
 For basic usage information, run:
