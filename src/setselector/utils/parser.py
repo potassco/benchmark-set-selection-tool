@@ -69,7 +69,7 @@ def get_parser() -> ArgumentParser:
         "--eval-features",
         dest="eval_features",
         action="store",
-        default="rules_s,bodies_s",
+        default="rules_f,bodies_f",
         help="comma-separated features to collect from evaluation data (default: %(default)s)",
     )
 

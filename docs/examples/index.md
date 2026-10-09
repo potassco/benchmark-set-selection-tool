@@ -67,4 +67,4 @@ setselector --eval eval.xml --n 5 --cutoff 300
 ```
 
 Evaluation features can be selected with `--eval-features` by providing a
-comma-separated list. The default features are `rules_s,bodies_s`.
+comma-separated list. The default features are `rules_f,bodies_f`.

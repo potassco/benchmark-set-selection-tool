@@ -56,7 +56,7 @@ Alternatively, an evaluation XML file can be used instead of the two CSV files:
 setselector --eval eval.xml --n 5 --cutoff 300
 ```
 
-By default, the features `rules_s` and `bodies_s` are extracted. Other
+By default, the features `rules_f` and `bodies_f` are extracted. Other
 measures can be selected with a comma-separated list:
 
 ```bash
